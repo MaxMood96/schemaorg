@@ -2,7 +2,7 @@ GEM
   remote: https://rubygems.org/
   specs:
     byebug (11.1.3)
-    concurrent-ruby (1.1.8)
+    concurrent-ruby (1.1.9)
     diff-lcs (1.4.4)
     ebnf (2.1.2)
       htmlentities (~> 4.3)
@@ -11,7 +11,7 @@ GEM
       sxp (~> 1.1)
     equivalent-xml (0.6.0)
       nokogiri (>= 1.4.3)
-    haml (5.2.1)
+    haml (5.2.2)
       temple (>= 0.8.0)
       tilt
     hamster (3.0.0)
@@ -34,12 +34,12 @@ GEM
     nokogiri (1.12.5)
       mini_portile2 (~> 2.6.1)
       racc (~> 1.4)
-    nokogumbo (2.0.4)
+    nokogumbo (2.0.5)
       nokogiri (~> 1.8, >= 1.8.4)
     racc (1.6.0)
     rack (2.2.3)
     rake (13.0.3)
-    rdf (3.1.13)
+    rdf (3.1.15)
       hamster (~> 3.0)
       link_header (~> 0.0, >= 0.0.8)
     rdf-aggregate-repo (3.1.0)
@@ -63,7 +63,7 @@ GEM
     rdf-turtle (3.1.3)
       ebnf (~> 2.1)
       rdf (~> 3.1, >= 3.1.8)
-    rdf-vocab (3.1.12)
+    rdf-vocab (3.1.14)
       rdf (~> 3.1, >= 3.1.12)
     rdf-xsd (3.1.1)
       rdf (~> 3.1)
@@ -93,17 +93,17 @@ PLATFORMS
 
 DEPENDENCIES
   byebug
-  equivalent-xml
+  equivalent-xml (>= 0.6.0)
   json-ld
   json-ld-preloaded
-  nokogiri
-  nokogumbo
+  nokogiri (>= 1.12.5)
+  nokogumbo (>= 2.0.4)
   rake
-  rdf-microdata
+  rdf-microdata (>= 3.1.3)
   rdf-rdfa
   rdf-reasoner
   rdf-turtle
   rspec
 
 BUNDLED WITH
-   2.2.3
+   2.1.4
