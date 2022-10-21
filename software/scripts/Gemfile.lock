@@ -32,7 +32,7 @@ GEM
     matrix (0.4.2)
     mini_portile2 (2.8.0)
     multi_json (1.15.0)
-    nokogiri (1.13.6)
+    nokogiri (1.13.9)
       mini_portile2 (~> 2.8.0)
       racc (~> 1.4)
     nokogumbo (2.0.5)
@@ -40,9 +40,9 @@ GEM
     racc (1.6.0)
     rack (2.2.3.1)
     rake (13.0.6)
-    rdf (3.2.8)
+    rdf (3.2.9)
       link_header (~> 0.0, >= 0.0.8)
-    rdf-aggregate-repo (3.2.0)
+    rdf-aggregate-repo (3.2.1)
       rdf (~> 3.2)
     rdf-microdata (3.2.1)
       htmlentities (~> 4.3)
@@ -63,7 +63,7 @@ GEM
     rdf-turtle (3.2.0)
       ebnf (~> 2.3)
       rdf (~> 3.2)
-    rdf-vocab (3.2.1)
+    rdf-vocab (3.2.2)
       rdf (~> 3.2, >= 3.2.4)
     rdf-xsd (3.2.1)
       rdf (~> 3.2)
@@ -87,7 +87,7 @@ GEM
       matrix
       rdf (~> 3.2)
     temple (0.8.2)
-    tilt (2.0.10)
+    tilt (2.0.11)
     unicode-types (1.7.0)
 
 PLATFORMS
@@ -98,7 +98,7 @@ DEPENDENCIES
   equivalent-xml
   json-ld
   json-ld-preloaded
-  nokogiri
+  nokogiri (>= 1.13.9)
   nokogumbo
   rake
   rdf-microdata
@@ -108,4 +108,4 @@ DEPENDENCIES
   rspec
 
 BUNDLED WITH
-   2.3.6
+   2.1.4
