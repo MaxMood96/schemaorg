@@ -8,7 +8,7 @@ gem 'rdf-reasoner'
 gem 'rdf-turtle'
 gem 'rspec'
 gem 'rake'
-gem 'nokogiri'
+gem 'nokogiri', '>= 1.13.9'
 gem 'nokogumbo'
 gem 'equivalent-xml'
 
