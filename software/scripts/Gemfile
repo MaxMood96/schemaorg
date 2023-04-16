@@ -1,6 +1,6 @@
 source 'https://rubygems.org'
 
-gem 'json-ld'
+gem 'json-ld', '>= 3.2.4'
 gem 'json-ld-preloaded'
 gem 'rdf-rdfa'
 gem 'rdf-microdata'
