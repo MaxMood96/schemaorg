@@ -4,3 +4,4 @@ jinja2
 markdown2
 #requests required to support rdflib
 requests 
+zipp>=3.19.1 # not directly required, pinned by Snyk to avoid a vulnerability
