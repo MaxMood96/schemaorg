@@ -13,8 +13,9 @@ GEM
       unicode-types (~> 1.7)
     equivalent-xml (0.6.0)
       nokogiri (>= 1.4.3)
-    haml (5.2.2)
-      temple (>= 0.8.0)
+    haml (6.3.0)
+      temple (>= 0.8.2)
+      thor
       tilt
     htmlentities (4.3.4)
     json-canonicalization (0.3.1)
@@ -38,7 +39,7 @@ GEM
     racc (1.7.3)
     rack (2.2.9)
     rake (13.0.6)
-    rdf (3.2.9)
+    rdf (3.2.12)
       link_header (~> 0.0, >= 0.0.8)
     rdf-aggregate-repo (3.2.1)
       rdf (~> 3.2)
@@ -48,8 +49,8 @@ GEM
       rdf (~> 3.2)
       rdf-rdfa (~> 3.2)
       rdf-xsd (~> 3.2)
-    rdf-rdfa (3.2.0)
-      haml (~> 5.2)
+    rdf-rdfa (3.2.3)
+      haml (>= 5.2, < 7)
       htmlentities (~> 4.3)
       rdf (~> 3.2)
       rdf-aggregate-repo (~> 3.2)
@@ -61,13 +62,13 @@ GEM
     rdf-turtle (3.2.1)
       ebnf (~> 2.3)
       rdf (~> 3.2)
-    rdf-vocab (3.2.3)
+    rdf-vocab (3.2.7)
       rdf (~> 3.2, >= 3.2.4)
     rdf-xsd (3.2.1)
       rdf (~> 3.2)
       rexml (~> 3.2)
-    rexml (3.2.8)
-      strscan (>= 3.0.9)
+    rexml (3.3.4)
+      strscan
     rspec (3.12.0)
       rspec-core (~> 3.12.0)
       rspec-expectations (~> 3.12.0)
@@ -86,8 +87,9 @@ GEM
     sxp (1.2.3)
       matrix (~> 0.4)
       rdf (~> 3.2)
-    temple (0.9.1)
-    tilt (2.0.11)
+    temple (0.10.3)
+    thor (1.3.1)
+    tilt (2.4.0)
     unicode-types (1.8.0)
 
 PLATFORMS
@@ -101,7 +103,7 @@ DEPENDENCIES
   nokogiri
   rake
   rdf-microdata
-  rdf-rdfa
+  rdf-rdfa (>= 3.2.1)
   rdf-reasoner
   rdf-turtle
   rspec

@@ -2,7 +2,7 @@ source 'https://rubygems.org'
 
 gem 'json-ld'
 gem 'json-ld-preloaded'
-gem 'rdf-rdfa'
+gem 'rdf-rdfa', '>= 3.2.1'
 gem 'rdf-microdata'
 gem 'rdf-reasoner'
 gem 'rdf-turtle'
