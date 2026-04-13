@@ -2,17 +2,17 @@
 # -*- coding: utf-8 -*-
 
 # Import standard python libraries
-
-import os
-import sys
-import jinja2
 import logging
+import sys
+from pathlib import Path
+from typing import Any, Dict, Optional, Union
+
+import jinja2
 
 # Import schema.org libraries
-if not os.getcwd() in sys.path:
-    sys.path.insert(1, os.getcwd())
+if Path.cwd() not in [Path(p).resolve() for p in sys.path]:
+    sys.path.insert(1, str(Path.cwd()))
 
-import software
 import software.util.schemaversion as schemaversion
 
 SITENAME = "Schema.org"
@@ -22,33 +22,27 @@ DOCSHREFPREFIX = "/"
 TERMHREFSUFFIX = ""
 TERMHREFPREFIX = "/"
 
-###################################################
-# JINJA INITIALISATION
-###################################################
-
-
-def _jinjaDebug(text):
+def _jinjaDebug(text: str) -> str:
     logging.debug(text)
     return ""
 
+local_vars: Dict[str, Any] = {}
 
-local_vars = {}
-
-
-def _set_local_var(local_vars, name, value):
-    local_vars[name] = value
+def _set_local_var(local_vars_dict: Dict[str, Any], name: str, value: Any) -> str:
+    local_vars_dict[name] = value
     return ""
 
+JENV: Optional[jinja2.Environment] = None
 
-JENV = None
-
-
-def GetJinga():
+def GetJinga() -> jinja2.Environment:
     global JENV
-    if JENV:
+    if JENV is not None:
         return JENV
+    
     jenv = jinja2.Environment(
-        loader=jinja2.FileSystemLoader(TEMPLATESDIR), autoescape=True, cache_size=0
+        loader=jinja2.FileSystemLoader(TEMPLATESDIR),
+        autoescape=True,
+        cache_size=0
     )
     jenv.filters["debug"] = _jinjaDebug
     jenv.globals["set_local_var"] = _set_local_var
@@ -56,14 +50,12 @@ def GetJinga():
     return JENV
 
 
-### Template rendering
-
-
-def templateRender(template_path, extra_vars=None, template_instance=None):
-    """Render a page template.
-
-    Returns: the generated page.
-    """
+def templateRender(
+    template_path: Optional[str], 
+    extra_vars: Optional[Dict[str, Any]] = None, 
+    template_instance: Optional[jinja2.Template] = None
+) -> str:
+    """Render a page template."""
     # Basic variables configuring UI
     tvars = {
         "local_vars": local_vars,
@@ -79,10 +71,11 @@ def templateRender(template_path, extra_vars=None, template_instance=None):
     if extra_vars:
         tvars.update(extra_vars)
 
-    template = template_instance or GetJinga().get_template(template_path)
-    return template.render(tvars)
-
-
-###################################################
-# JINJA INITIALISATION - End
-###################################################
+    if template_instance:
+        template = template_instance
+    elif template_path:
+        template = GetJinga().get_template(template_path)
+    else:
+        raise ValueError("Either template_path or template_instance must be provided")
+        
+    return str(template.render(tvars))

@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import os
-import shutil
 import enum
+import shutil
+from pathlib import Path
+from typing import Dict, Set, Union, Optional, List, Callable, Iterable, Any, FrozenSet
 
-
-EXTENSIONS_FOR_FORMAT = {
+EXTENSIONS_FOR_FORMAT: Dict[str, str] = {
     "xml": "xml",
     "rdf": "rdf",
     "nquads": "nq",
@@ -23,126 +23,73 @@ class FileSelector(str, enum.Enum):
     ALL = "all"
     CURRENT = "current"
 
-    def __str__(self):
-        return self.value
+    def __str__(self) -> str:
+        return str(self.value)
 
 
-CHECKEDPATHS = set()
-FILESET_SELECTORS = frozenset([s.value for s in FileSelector])
-FILESET_PROTOCOLS = frozenset(["http", "https"])
+CHECKEDPATHS: Set[Path] = set()
+FILESET_SELECTORS: FrozenSet[str] = frozenset([s.value for s in FileSelector])
+FILESET_PROTOCOLS: FrozenSet[str] = frozenset(["http", "https"])
 
 
-def createMissingDir(dir_path):
+def createMissingDir(dir_path: Union[str, Path]) -> None:
     """Create a directory if it does not exist"""
-    if not os.path.exists(dir_path):
-        os.makedirs(dir_path)
+    Path(dir_path).mkdir(parents=True, exist_ok=True)
 
 
-def isAll(selector):
+def isAll(selector: Union[str, FileSelector]) -> bool:
     """Check if a selector string is a variation of the 'All' token."""
     return str(selector).lower() == FileSelector.ALL
 
 
-def checkFilePath(path):
-    if not path in CHECKEDPATHS:
-        CHECKEDPATHS.add(path)
-        # os.path.join ignores the first argument if `path` is absolute.
-        path = os.path.join(os.getcwd(), path)
-        try:
-            os.makedirs(path)
-        except OSError as e:
-            if not os.path.isdir(path):
-                raise e
+def checkFilePath(path: Union[str, Path]) -> None:
+    full_path: Path = Path(path).resolve()
+    if full_path not in CHECKEDPATHS:
+        full_path.mkdir(parents=True, exist_ok=True)
+        CHECKEDPATHS.add(full_path)
 
 
-def ensureAbsolutePath(output_dir, relative_path):
+def ensureAbsolutePath(output_dir: Union[str, Path], relative_path: str) -> str:
     """Convert into an absolute path and ensure the directory exists."""
-    filepath = os.path.join(output_dir, relative_path)
-    checkFilePath(os.path.dirname(filepath))
-    return filepath
+    filepath: Path = Path(output_dir) / relative_path
+    checkFilePath(filepath.parent)
+    return str(filepath.absolute())
 
 
 def releaseFilePath(
-    output_dir,
-    version,
-    selector,
-    protocol,
-    output_format,
-    suffix=None,
-    subdirectory_path=None,
-):
-    """Create a path for a release file
-
-    Args:
-        output_directory: typically schemaglobals.OUTPUTDIR
-        version: version number
-        selector: either FileSelector.ALL or FileSelector.CURRENT
-        protocol: either 'http' or 'https'
-        output_format: one of the keys present in `EXTENSIONS_FOR_FORMAT`
-        suffix: optional suffix that is ended at the end of the file.
-        subdirectory_path: optional subdirectory path. If None, defaults to "releases/{version}". An empty string means the root of output_dir.
-    Returns:
-        an absolute path with the necessary directories created.
-    """
-    extension = EXTENSIONS_FOR_FORMAT[output_format.lower()]
-    selector = selector.lower()
-    assert selector in FILESET_SELECTORS, selector
+    output_dir: str,
+    version: str,
+    selector: Union[str, FileSelector],
+    protocol: str,
+    output_format: str,
+    suffix: Optional[str] = None,
+    subdirectory_path: Optional[str] = None,
+) -> str:
+    """Create a path for a release file"""
+    extension: str = EXTENSIONS_FOR_FORMAT[output_format.lower()]
+    selector_str: str = str(selector).lower()
+    assert selector_str in FILESET_SELECTORS, selector_str
     protocol = protocol.lower()
     assert protocol in FILESET_PROTOCOLS, protocol
-    parts = [selector, protocol]
+    
+    parts: List[str] = [selector_str, protocol]
     if suffix:
         parts.append(suffix)
-    merged = "-".join(parts)
-    filename = f"schemaorg-{merged}.{extension}"
+    merged: str = "-".join(parts)
+    filename: str = f"schemaorg-{merged}.{extension}"
 
     if subdirectory_path is None:
         subdirectory_path = f"releases/{version}"
 
-    relative_path = os.path.join(subdirectory_path, filename)
     return ensureAbsolutePath(
         output_dir=output_dir,
-        relative_path=relative_path,
+        relative_path=str(Path(subdirectory_path) / filename),
     )
 
 
-def mycopytree(src, dst, symlinks=False, ignore=None):
+def mycopytree(src: str, dst: str, symlinks: bool = False, ignore: Optional[Callable[[str, List[str]], Iterable[str]]] = None) -> None:
     """Copy a file-system tree, copes with already existing directories."""
-    names = os.listdir(src)
-    if ignore is not None:
-        ignored_names = ignore(src, names)
-    else:
-        ignored_names = frozenset()
-
-    if not os.path.isdir(dst):
-        os.makedirs(dst)
-    errors = []
-    for name in names:
-        if name in ignored_names:
-            continue
-        srcname = os.path.join(src, name)
-        dstname = os.path.join(dst, name)
-        try:
-            if symlinks and os.path.islink(srcname):
-                linkto = os.readlink(srcname)
-                os.symlink(linkto, dstname)
-            elif os.path.isdir(srcname):
-                mycopytree(srcname, dstname, symlinks, ignore)
-            else:
-                # Will raise a SpecialFileError for unsupported file types
-                shutil.copy2(srcname, dstname)
-        # catch the Error from the recursive copytree so that we can
-        # continue with other files
-        except OSError as err:
-            errors.extend(err.args[0])
-        except EnvironmentError as why:
-            errors.append((srcname, dstname, str(why)))
     try:
-        shutil.copystat(src, dst)
-    except OSError as why:
-        if WindowsError is not None and isinstance(why, WindowsError):
-            # Copying file access times may fail on Windows
-            pass
-        else:
-            errors.extend((src, dst, str(why)))
-    if errors:
-        raise Error(errors)
+        shutil.copytree(src, dst, symlinks=symlinks, ignore=ignore, dirs_exist_ok=True)
+    except shutil.Error as err:
+        raise Exception(err.args[0])

@@ -5,80 +5,71 @@ import logging
 import markdown2
 import re
 import threading
+from typing import Optional, Iterable
+
+WIKILINKPATTERN: str = r"\[\[([\w0-9_ -]+)\]\]"
+
+log: logging.Logger = logging.getLogger(__name__)
 
 
-WIKILINKPATTERN = r"\[\[([\w0-9_ -]+)\]\]"
+class MarkdownTool:
+    WCLASS: str = "localLink"
+    WPRE: str = "/"
+    WPOST: str = ""
 
-log = logging.getLogger(__name__)
+    def __init__(self) -> None:
+        self._md: markdown2.Markdown = markdown2.Markdown()
+        self._parselock: threading.Lock = threading.Lock()
+        self.wpre: Optional[str] = None
+        self.wpost: Optional[str] = None
 
-
-class MarkdownTool(object):
-    WCLASS = "localLink"
-    WPRE = "/"
-    WPOST = ""
-
-    def __init__(self):
-        # from markdown.extensions.wikilinks import WikiLinkExtension
-        # self._md = markdown2.Markdown(extensions=[WikiLinkExtension(base_url='/', end_url='', html_class='localLink')])
-        self._md = markdown2.Markdown()
-        self._parselock = threading.Lock()
-
-    def setPre(self, pre="./"):
+    def setPre(self, pre: str = "./") -> None:
         self.wpre = pre
 
-    def setPost(self, post=""):
+    def setPost(self, post: str = "") -> None:
         self.wpost = post
 
-    def parse(self, source, preservePara=False, wpre=None):
+    def parse(self, source: str, preservePara: bool = False, wpre: Optional[str] = None) -> str:
         source = source.strip()
         if not source:
             return ""
 
         source = source.replace("\\n", "\n")
         with self._parselock:
-            ret = self._md.convert(source)
+            ret: str = str(self._md.convert(source))
 
         if not preservePara:
-            # Remove wrapping <p> </p>\n that Markdown2 adds by default
             if len(ret) > 7 and ret.startswith("<p>") and ret.endswith("</p>\n"):
-                ret = ret[3 : len(ret) - 5]
+                ret = ret[3:-5]
 
-            ret = ret.replace("<p>", "")
-            ret = ret.replace("</p>", "<br/><br/>")
+            ret = ret.replace("<p>", "").replace("</p>", "<br/><br/>")
             if ret.endswith("<br/><br/>"):
-                ret = ret[: len(ret) - 10]
+                ret = ret[:-10]
 
         return self.parseWiklinks(ret, wpre=wpre)
 
-    def parseLines(self, lines):
+    def parseLines(self, lines: Iterable[str]) -> str:
         return self.parse("".join(lines))
 
-    def parseWiklinks(self, source, wpre=None):
+    def parseWiklinks(self, source: str, wpre: Optional[str] = None) -> str:
         self.wpre = wpre
         return re.sub(WIKILINKPATTERN, self.wikilinksReplace, source)
 
-    def wikilinksReplace(self, match):
-        wpre = self.wpre
-        t = match.group(1)
-        return '<a class="%s" href="%s%s%s">%s</a>' % (
-            MarkdownTool.WCLASS,
-            MarkdownTool.WPRE,
-            t,
-            MarkdownTool.WPOST,
-            t,
-        )
+    def wikilinksReplace(self, match: re.Match) -> str:
+        t: str = match.group(1)
+        return f'<a class="{self.WCLASS}" href="{self.WPRE}{t}{self.WPOST}">{t}</a>'
 
     @classmethod
-    def setWikilinkCssClass(cls, c):
+    def setWikilinkCssClass(cls, c: str) -> None:
         cls.WCLASS = c
 
     @classmethod
-    def setWikilinkPrePath(cls, p):
-        MarkdownTool.WPRE = p
+    def setWikilinkPrePath(cls, p: str) -> None:
+        cls.WPRE = p
 
     @classmethod
-    def setWikilinkPostPath(cls, p):
+    def setWikilinkPostPath(cls, p: str) -> None:
         cls.WPOST = p
 
 
-Markdown = MarkdownTool()
+Markdown: MarkdownTool = MarkdownTool()
