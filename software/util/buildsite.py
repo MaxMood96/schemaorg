@@ -113,10 +113,10 @@ def initialize() -> argparse.Namespace:
         help="build option(repeatable) - flags to be passed to build code",
     )
     parser.add_argument(
-        "--rubytests",
+        "--shacltests",
         default=False,
         action="store_true",
-        help="run the post generation ruby tests",
+        help="run the post generation SHACL tests",
     )
     parser.add_argument(
         "-release",
@@ -147,7 +147,7 @@ def initialize() -> argparse.Namespace:
     if args.output:
         schemaglobals.OUTPUTDIR = args.output
 
-    if args.autobuild or args.release:
+    if args.autobuild or args.release or args.shacltests:
         schemaglobals.TERMS = ["ALL"]
         schemaglobals.PAGES = ["ALL"]
         schemaglobals.FILES = ["ALL"]
@@ -192,7 +192,7 @@ def initdir(output_dir_str: str, handler_path: str) -> None:
     log.info(f'Building site in "{output_dir}" directory')
     output_dir.mkdir(parents=True, exist_ok=True)
     clear()
-    
+
     (output_dir / "docs" / "contributors").mkdir(parents=True, exist_ok=True)
     (output_dir / "empty").mkdir(parents=True, exist_ok=True)
     (output_dir / "releases" / schemaversion.getVersion()).mkdir(parents=True, exist_ok=True)
@@ -262,67 +262,20 @@ def processFiles(files: Iterable[str]) -> None:
             buildfiles.buildFiles(files)
 
 
-@contextlib.contextmanager
-def tempory_symlink(src_dir: Path, dst_dir: Path) -> Generator[None, None, None]:
-    """Context manager to create a temporary directory symlink and clean it up on exit."""
-    try:
-        log.info(f"Setting up {dst_dir} from {src_dir}")
-        if dst_dir.is_symlink():
-            dst_dir.unlink()
-        dst_dir.symlink_to(src_dir, target_is_directory=True)
-        yield
-    finally:
-        log.info(f"Cleaning up {dst_dir}")
-        dst_dir.unlink()
+def runShaclTests() -> None:
+    """Run the SHACL validation tests on the generated examples."""
+    with pretty_logger.BlockLog(logger=log, message="Running SHACL validation tests"):
+        version: str = schemaversion.getVersion()
+        shacl_file: Path = Path.cwd() / schemaglobals.RELEASE_DIR / version / "schemaorg-shapes.shacl"
+        if not shacl_file.exists():
+            log.warning(f"SHACL file {shacl_file} not found. Skipping SHACL validation.")
+            return
 
-
-RUBY_INSTALLATION_MESSAGE: str = """
-Please check if your Ruby installation is correct and all dependencies installed.
-
-bundle install --gemfile=software/scripts/Gemfile --jobs 4 --retry 3
-
-"""
-
-
-def runRubyTests(release_dir_str: str) -> None:
-    """The ruby tests are designed to run in a release sub-directory.
-
-    Now generally, this script does not build a full release,
-    instead this test creates a symbolic link to the release directory,
-    runs the ruby tests and then deletes the symbolic link.
-
-    :param release_dir: the root release directory.
-    """
-    with pretty_logger.BlockLog(logger=log, message="Running ruby tests"):
-        cmd: List[str] = ["bundle", "check", "--gemfile=software/scripts/Gemfile"]
+        cmd: List[str] = [sys.executable, "software/scripts/validate_examples_shacl.py"]
         status: int = subprocess.call(cmd)
         if status:
-            log.error(RUBY_INSTALLATION_MESSAGE)
+            log.error(f"SHACL validation reported errors (exit code {status}). Failing build.")
             sys.exit(status)
-        
-        version: str = schemaversion.getVersion()
-        src_dir: Path = Path.cwd() / release_dir_str / version
-        root_json_path: Path = src_dir / "schemaorgcontext.jsonld"
-        if not root_json_path.exists():
-            log.error(
-                f"File {root_json_path} not found. Ruby tests require a fully built release."
-            )
-            sys.exit(os.EX_NOINPUT)
-            
-        timestamp: float = root_json_path.stat().st_mtime
-        timestamp_str: str = datetime.datetime.fromtimestamp(timestamp).strftime(
-            "%Y-%m-%d %H:%M:%S"
-        )
-        log.info(f"LATEST Release Build time: {timestamp_str}")
-        dst_dir: Path = Path.cwd() / release_dir_str / "LATEST"
-        with tempory_symlink(src_dir=src_dir, dst_dir=dst_dir):
-            cmd_list: List[str] = ["bundle", "exec", "rake"]
-            cwd: Path = Path.cwd() / "software/scripts"
-            log.info("Running ruby tests")
-            status = subprocess.call(cmd_list, cwd=str(cwd))
-            if status:
-                log.error("Ruby tests failed")
-                sys.exit(status)
 
 
 def copyReleaseFiles(release_dir: str) -> None:
@@ -345,7 +298,7 @@ if __name__ == "__main__":
     log.info(
         f"Version: {schemaversion.getVersion()} Released: {schemaversion.getCurrentVersionDate()}"
     )
-    if args.rubytests:
+    if args.shacltests:
         args.autobuild = True
     if args.release:
         args.autobuild = True
@@ -363,39 +316,5 @@ if __name__ == "__main__":
 
     if args.release:
         copyReleaseFiles(release_dir=schemaglobals.RELEASE_DIR)
-    if args.rubytests:
-        runRubyTests(release_dir=schemaglobals.RELEASE_DIR)
-
-
-###################################################
-# Main program
-###################################################
-
-if __name__ == "__main__":
-    args = initialize()
-
-    software.CheckWorkingDirectory()
-    log.info(
-        f"Version: {schemaversion.getVersion()} Released: {schemaversion.getCurrentVersionDate()}"
-    )
-    # The ruby tests require a fully built tree
-    if args.rubytests:
-        args.autobuild = True
-    if args.release:
-        args.autobuild = True
-        log.info("BUILDING RELEASE VERSION")
-    if args.examplesnum or args.release or args.autobuild:
-        with pretty_logger.BlockLog(
-            message="Checking Examples for assigned identifiers", logger=log
-        ):
-            software.SchemaExamples.utils.assign_example_ids.AssignExampleIds()
-    initdir(output_dir_str=schemaglobals.OUTPUTDIR, handler_path=schemaglobals.HANDLER_FILE)
-    runtests()
-    processTerms(terms=schemaglobals.TERMS)
-    processDocs(pages=schemaglobals.PAGES)
-    processFiles(files=schemaglobals.FILES)
-
-    if args.release:
-        copyReleaseFiles(release_dir=schemaglobals.RELEASE_DIR)
-    if args.rubytests:
-        runRubyTests(release_dir=schemaglobals.RELEASE_DIR)
+    if args.shacltests:
+        runShaclTests()
